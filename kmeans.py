@@ -1,85 +1,46 @@
+# K-Means Clustering
+
+# Importing the libraries
+from sklearn.cluster import KMeans
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import pandas as pd
 
-def load_dataset(name):
-    return np.loadtxt(name)
+# Importing the dataset
+dataset = pd.read_csv('./data/Mall_Customers.csv')
+X = dataset.iloc[:, [3, 4]].values
 
+# Using the elbow method to find the optimal number of clusters
+wcss = []
+for i in range(1, 11):
+    kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)
+    kmeans.fit(X)
+    wcss.append(kmeans.inertia_)
+plt.plot(range(1, 11), wcss)
+plt.title('The Elbow Method')
+plt.xlabel('Number of clusters')
+plt.ylabel('WCSS')
+plt.show()
 
-def euclidian(a, b):
-    return np.linalg.norm(a-b)
+# Fitting K-Means to the dataset
+kmeans = KMeans(n_clusters=4, init='k-means++', random_state=42)
+y_kmeans = kmeans.fit_predict(X)
 
-
-def plot(dataset, history_centroids, belongs_to):
-    colors = ['r', 'g']
-
-    fig, ax = plt.subplots()
-
-    for index in range(dataset.shape[0]):
-        instances_close = [i for i in range(len(belongs_to)) if belongs_to[i] == index]
-        for instance_index in instances_close:
-            ax.plot(dataset[instance_index][0], dataset[instance_index][1], (colors[index] + 'o'))
-
-    history_points = []
-    for index, centroids in enumerate(history_centroids):
-        for inner, item in enumerate(centroids):
-            if index == 0:
-                history_points.append(ax.plot(item[0], item[1], 'bo')[0])
-            else:
-                history_points[inner].set_data(item[0], item[1])
-                print("centroids {} {}".format(index, item))
-            
-                plt.pause(0.8)
-
-
-def kmeans(k, epsilon=0, distance='euclidian'):
-    history_centroids = []
-    if distance == 'euclidian':
-        dist_method = euclidian
-    dataset = load_dataset('./data/kmeans.txt')
-    # dataset = dataset[:, 0:dataset.shape[1] - 1]
-    num_instances, num_features = dataset.shape
-    prototypes = dataset[np.random.randint(0, num_instances - 1, size=k)]
-    history_centroids.append(prototypes)
-    prototypes_old = np.zeros(prototypes.shape)
-    belongs_to = np.zeros((num_instances, 1))
-    norm = dist_method(prototypes, prototypes_old)
-    iteration = 0
-    while norm > epsilon:
-        iteration += 1
-        norm = dist_method(prototypes, prototypes_old)
-        prototypes_old = prototypes
-        for index_instance, instance in enumerate(dataset):
-            dist_vec = np.zeros((k, 1))
-            for index_prototype, prototype in enumerate(prototypes):
-                dist_vec[index_prototype] = dist_method(prototype,
-                                                        instance)
-
-            belongs_to[index_instance, 0] = np.argmin(dist_vec)
-
-        tmp_prototypes = np.zeros((k, num_features))
-
-        for index in range(len(prototypes)):
-            instances_close = [i for i in range(len(belongs_to)) if belongs_to[i] == index]
-            prototype = np.mean(dataset[instances_close], axis=0)
-            # prototype = dataset[np.random.randint(0, num_instances, size=1)[0]]
-            tmp_prototypes[index, :] = prototype
-
-        prototypes = tmp_prototypes
-
-        history_centroids.append(tmp_prototypes)
-
-    # plot(dataset, history_centroids, belongs_to)
-
-    return prototypes, history_centroids, belongs_to
-
-
-def execute():
-    x = np.random.randint(0,10,100)
-    x = x.reshape((50, 2))
-    np.savetxt('./data/kmeans.txt', x, delimiter=' ', fmt='%d')
-    dataset = load_dataset('./data/kmeans.txt')
-    centroids, history_centroids, belongs_to = kmeans(2)
-    plot(dataset, history_centroids, belongs_to)
-
-execute()
+# Visualising the clusters
+plt.scatter(X[y_kmeans == 0, 0], X[y_kmeans == 0, 1],
+            s=100, c='red', label='Cluster 1')
+plt.scatter(X[y_kmeans == 1, 0], X[y_kmeans == 1, 1],
+            s=100, c='blue', label='Cluster 2')
+plt.scatter(X[y_kmeans == 2, 0], X[y_kmeans == 2, 1],
+            s=100, c='green', label='Cluster 3')
+plt.scatter(X[y_kmeans == 3, 0], X[y_kmeans == 3, 1],
+            s=100, c='cyan', label='Cluster 4')
+# plt.scatter(X[y_kmeans == 4, 0], X[y_kmeans == 4, 1],
+#             s=100, c='magenta', label='Cluster 5')
+plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[
+            :, 1], s=300, c='yellow', label='Centroids')
+plt.title('Clusters of customers')
+plt.xlabel('Annual Income (k$)')
+plt.ylabel('Spending Score (1-100)')
+plt.legend()
+plt.show()
